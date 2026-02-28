@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calyx Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #ff2d55;
+    --red-dark: #c9184a;
+    --red-glow: rgba(255,45,85,0.4);
+    --bg: #08060f;
+    --card: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+    --text: #f0eaf8;
+    --muted: rgba(240,234,248,0.5);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  /* Animated background orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.25;
+    pointer-events: none;
+    animation: drift 12s ease-in-out infinite alternate;
+  }
+  .orb1 { width: 500px; height: 500px; background: #ff2d55; top: -150px; left: -100px; animation-delay: 0s; }
+  .orb2 { width: 400px; height: 400px; background: #7b2fff; bottom: -100px; right: -80px; animation-delay: -4s; }
+  .orb3 { width: 300px; height: 300px; background: #ff6b35; top: 40%; left: 60%; animation-delay: -8s; }
+
+  @keyframes drift {
+    from { transform: translate(0, 0) scale(1); }
+    to   { transform: translate(30px, 40px) scale(1.1); }
+  }
+
+  /* Dot grid overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Top bar */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 40px;
+    background: rgba(8,6,15,0.6);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+    animation: slideDown 0.6s ease;
+  }
+  @keyframes slideDown { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #fff 30%, var(--red));
+    letter-spacing: -1px;
+  }
+
+  .user-pill {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 8px 18px; border-radius: 999px;
+    font-size: 14px; color: var(--muted);
+  }
+  .user-pill span { color: white; font-weight: 500; }
+
+  .logout-link {
+    color: var(--muted); font-size: 13px; text-decoration: none;
+    border: 1px solid var(--border); padding: 7px 16px; border-radius: 999px;
+    transition: 0.3s;
+  }
+  .logout-link:hover { border-color: var(--red); color: var(--red); }
+
+  /* Main card */
+  .main {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 40px; padding: 120px 20px 60px;
+    max-width: 600px; width: 100%;
+    animation: fadeUp 0.8s ease 0.2s both;
+  }
+  @keyframes fadeUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .headline {
+    text-align: center;
+  }
+  .headline h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+  }
+  .headline p {
+    font-size: 15px; color: var(--muted); font-weight: 300; letter-spacing: 0.3px;
+  }
+
+  /* SOS button */
+  .sos-wrap {
+    position: relative; display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Ripple rings */
+  .ring {
+    position: absolute; border-radius: 50%;
+    border: 1.5px solid var(--red);
+    opacity: 0;
+    animation: ripple 3s ease-out infinite;
+  }
+  .ring:nth-child(1) { width: 200px; height: 200px; animation-delay: 0s; }
+  .ring:nth-child(2) { width: 260px; height: 260px; animation-delay: 0.8s; }
+  .ring:nth-child(3) { width: 320px; height: 320px; animation-delay: 1.6s; }
+
+  @keyframes ripple {
+    0%   { transform: scale(0.85); opacity: 0.6; }
+    100% { transform: scale(1.2);  opacity: 0; }
+  }
+
+  .sos-btn {
+    position: relative; z-index: 2;
+    width: 170px; height: 170px; border-radius: 50%; border: none; cursor: pointer;
+    background: conic-gradient(from 0deg, #ff2d55, #ff6b6b, #c9184a, #ff2d55);
+    color: white; font-family: 'DM Sans', sans-serif;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    box-shadow: 0 0 60px var(--red-glow), 0 0 120px rgba(255,45,85,0.2), inset 0 1px 0 rgba(255,255,255,0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .sos-btn .icon { font-size: 32px; line-height: 1; }
+  .sos-btn .label { font-size: 13px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.9; }
+  .sos-btn .sublabel { font-size: 11px; opacity: 0.6; letter-spacing: 0.5px; }
+
+  .sos-btn:hover { transform: scale(1.07); box-shadow: 0 0 80px var(--red-glow), 0 0 160px rgba(255,45,85,0.3), inset 0 1px 0 rgba(255,255,255,0.3); }
+  .sos-btn:active { transform: scale(0.96); }
+
+  /* Report button */
+  .report-btn {
+    width: 100%; max-width: 420px;
+    padding: 18px 30px; border-radius: 16px; border: 1px solid var(--border); cursor: pointer;
+    background: var(--card);
+    backdrop-filter: blur(20px);
+    color: white; font-family: 'DM Sans', sans-serif;
+    font-size: 16px; font-weight: 500; letter-spacing: 0.3px;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    transition: 0.3s ease;
+    position: relative; overflow: hidden;
+  }
+  .report-btn::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05), transparent);
+    opacity: 0; transition: 0.3s;
+  }
+  .report-btn:hover { border-color: rgba(255,255,255,0.25); transform: translateY(-2px); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+  .report-btn:hover::before { opacity: 1; }
+  .report-btn .btn-icon { font-size: 20px; }
+  .report-btn .btn-text { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .report-btn .btn-title { font-size: 15px; font-weight: 500; }
+  .report-btn .btn-sub { font-size: 12px; color: var(--muted); font-weight: 300; }
+  .report-btn .arrow { margin-left: auto; opacity: 0.4; font-size: 18px; transition: 0.3s; }
+  .report-btn:hover .arrow { opacity: 1; transform: translateX(4px); }
+
+  /* Status bar */
+  .status-bar {
+    display: flex; gap: 16px; width: 100%; max-width: 420px;
+    animation: fadeUp 0.8s ease 0.5s both;
+  }
+  .status-chip {
+    flex: 1; padding: 12px 16px; border-radius: 12px;
+    background: var(--card); border: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px; font-size: 13px;
+  }
+  .status-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; flex-shrink: 0; animation: blink 2s ease-in-out infinite; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .status-chip span { color: var(--muted); }
+  .status-chip strong { color: white; font-weight: 500; }
+
+  /* SOS Overlay */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+    backdrop-filter: blur(20px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px;
+  }
+  .overlay.active { display: flex; }
+
+  .alert-card {
+    background: linear-gradient(135deg, #1a0a10, #0f0615);
+    border: 1px solid rgba(255,45,85,0.3);
+    border-radius: 28px; padding: 50px 40px;
+    text-align: center; max-width: 420px; width: 100%;
+    box-shadow: 0 0 80px rgba(255,45,85,0.2);
+    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .alert-icon { font-size: 56px; margin-bottom: 20px; display: block; animation: shake 0.5s ease 0.3s; }
+  @keyframes shake {
+    0%,100% { transform: rotate(0); }
+    25% { transform: rotate(-8deg); }
+    75% { transform: rotate(8deg); }
+  }
+  .alert-card h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem; color: var(--red); margin-bottom: 12px;
+  }
+  .alert-card p { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+
+  .loc-badge {
+    background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 16px; font-size: 13px; color: var(--muted);
+    margin-bottom: 28px; display: none;
+  }
+  .loc-badge.show { display: block; }
+
+  .progress-bar {
+    height: 4px; background: rgba(255,255,255,0.1); border-radius: 4px;
+    margin-bottom: 28px; overflow: hidden; display: none;
+  }
+  .progress-bar.show { display: block; }
+  .progress-fill { height: 100%; background: var(--red); border-radius: 4px; width: 0%; transition: width 3s linear; }
+
+  .cancel-btn {
+    background: transparent; border: 1px solid rgba(255,255,255,0.15);
+    color: var(--muted); padding: 12px 32px; border-radius: 999px;
+    font-family: 'DM Sans', sans-serif; font-size: 15px; cursor: pointer; transition: 0.3s;
+  }
+  .cancel-btn:hover { border-color: var(--red); color: var(--red); }
+
+  @media (max-width: 500px) {
+    .topbar { padding: 16px 20px; }
+    .sos-btn { width: 150px; height: 150px; }
+    .alert-card { padding: 36px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<!-- Top bar -->
+<nav class="topbar">
+  <div class="logo">Calyx</div>
+  <div class="user-pill">👤 <span>{{ session.get('user_name', 'User') }}</span></div>
+  <a href="/logout" class="logout-link">Sign out →</a>
+</nav>
+
+<!-- SOS Overlay -->
+<div class="overlay" id="overlay">
+  <div class="alert-card">
+    <span class="alert-icon">🚨</span>
+    <h2>SOS Activated</h2>
+    <p id="alertMsg">Acquiring your live location...</p>
+    <div class="loc-badge" id="locBadge">📍 <span id="locText"></span></div>
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <button class="cancel-btn" onclick="cancelSOS()">Cancel</button>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="main">
+  <div class="headline">
+    <h1>Don't worry,<br>Calyx has you.</h1>
+    <p>Your safety companion — always ready, always here.</p>
+  </div>
+
+  <!-- SOS button with rings -->
+  <div class="sos-wrap">
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <div class="ring"></div>
+    <button class="sos-btn" onclick="triggerSOS()">
+      <span class="icon">🆘</span>
+      <span class="label">Emergency</span>
+      <span class="sublabel">tap to activate</span>
+    </button>
+  </div>
+
+  <!-- Report button -->
+  <button class="report-btn" onclick="window.location.href='/report'">
+    <span class="btn-icon">🕵️</span>
+    <span class="btn-text">
+      <span class="btn-title">Anonymous Reporting</span>
+      <span class="btn-sub">Submit incidents safely & securely</span>
+    </span>
+    <span class="arrow">→</span>
+  </button>
+
+  <!-- Status -->
+  <div class="status-bar">
+    <div class="status-chip">
+      <div class="dot"></div>
+      <span>System <strong>Active</strong></span>
+    </div>
+    <div class="status-chip" id="locStatus">
+      <div class="dot" style="background:#f59e0b; box-shadow:0 0 8px #f59e0b;"></div>
+      <span>Location <strong>Pending</strong></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentLocation = null;
+  let sosTimeout = null;
+  let sosActive = false;
+
+  // Get location on load
+  window.addEventListener('load', () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((pos) => {
+        currentLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy };
+        const chip = document.getElementById('locStatus');
+        chip.querySelector('.dot').style.cssText = 'width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;flex-shrink:0;';
+        chip.querySelector('span').innerHTML = 'Location <strong>Ready</strong>';
+      }, () => {});
+    }
+  });
+
+  function triggerSOS() {
+    if (sosActive) return;
+    sosActive = true;
+    document.getElementById('overlay').classList.add('active');
+    document.getElementById('alertMsg').textContent = 'Acquiring your live location...';
+
+    const getLocation = () => new Promise((resolve, reject) => {
+      if (currentLocation) { resolve(currentLocation); return; }
+      navigator.geolocation.getCurrentPosition(
+        p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
+        () => reject()
+      );
+    });
+
+    getLocation().then(loc => {
+      currentLocation = loc;
+      document.getElementById('locText').textContent = `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)} (±${loc.accuracy.toFixed(0)}m)`;
+      document.getElementById('locBadge').classList.add('show');
+      document.getElementById('alertMsg').textContent = 'Alerting your emergency contacts in 3 seconds...';
+      document.getElementById('progressBar').classList.add('show');
+      setTimeout(() => document.getElementById('progressFill').style.width = '100%', 50);
+      sosTimeout = setTimeout(() => executeSOS(loc), 3000);
+    }).catch(() => {
+      document.getElementById('alertMsg').textContent = 'Sending SOS without location...';
+      document.getElementById('progressBar').classList.add('show');
+      setTimeout(() => document.getElementById('progressFill').style.width = '100%', 50);
+      sosTimeout = setTimeout(() => executeSOS(null), 3000);
+    });
+  }
+
+  async function executeSOS(loc) {
+    try {
+      const res = await fetch('/sos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lat: loc?.lat || null, lng: loc?.lng || null,
+          location: loc ? `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}` : 'Unknown'
+        })
+      });
+      const data = await res.json();
+      document.getElementById('alertMsg').textContent = `✅ SOS sent! ${data.message}`;
+      document.getElementById('progressBar').style.display = 'none';
+      setTimeout(() => { document.getElementById('overlay').classList.remove('active'); sosActive = false; }, 4000);
+    } catch(e) {
+      document.getElementById('alertMsg').textContent = '❌ Error. Please call emergency services directly.';
+      sosActive = false;
+    }
+  }
+
+  function cancelSOS() {
+    clearTimeout(sosTimeout);
+    document.getElementById('overlay').classList.remove('active');
+    document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('locBadge').classList.remove('show');
+    document.getElementById('progressBar').classList.remove('show');
+    sosActive = false;
+  }
+</script>
+</body>
+</html>

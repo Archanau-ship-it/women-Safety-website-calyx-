@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calyx - Anonymous Reporting</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Arial',sans-serif; }
+    body {
+      min-height:100vh; background:linear-gradient(135deg,#c51b0f 0%,#5e0707 100%);
+      display:flex; justify-content:center; align-items:center; padding:20px;
+    }
+    .container {
+      width:90%; max-width:600px; background:rgba(255,255,255,0.15);
+      backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+      border-radius:25px; border:1px solid rgba(255,255,255,0.3);
+      box-shadow:0 20px 60px rgba(0,0,0,0.3); padding:40px; color:white;
+    }
+    h1 { text-align:center; margin-bottom:10px; font-size:28px; }
+    .subtitle { text-align:center; margin-bottom:40px; opacity:0.9; font-size:16px; }
+    .form-group { margin-bottom:30px; }
+    label { display:block; margin-bottom:10px; font-weight:bold; font-size:14px; }
+    textarea, input[type="text"] {
+      width:100%; padding:15px; border:none; border-radius:15px;
+      background:rgba(255,255,255,0.2); color:white; font-size:16px;
+      backdrop-filter:blur(10px); transition:all 0.3s; font-family:inherit;
+    }
+    textarea { resize:vertical; min-height:120px; }
+    textarea::placeholder, input::placeholder { color:rgba(255,255,255,0.7); }
+    textarea:focus, input:focus {
+      outline:none; background:rgba(255,255,255,0.3);
+      box-shadow:0 0 20px rgba(255,255,255,0.2); transform:translateY(-2px);
+    }
+    input[type="hidden"] { display:none; }
+    .file-upload-area {
+      border:3px dashed rgba(255,255,255,0.5); border-radius:20px; padding:40px;
+      text-align:center; cursor:pointer; transition:all 0.3s;
+      background:rgba(255,255,255,0.05); margin-bottom:10px;
+    }
+    .file-upload-area:hover { border-color:rgba(255,255,255,0.8); background:rgba(255,255,255,0.1); }
+    .file-upload-area.dragover { border-color:#4CAF50; background:rgba(76,175,80,0.1); transform:scale(1.02); }
+    .file-icon { font-size:48px; margin-bottom:15px; }
+    .file-input { display:none; }
+    .evidence-list { display:flex; flex-wrap:wrap; gap:15px; margin-top:15px; }
+    .evidence-item {
+      position:relative; width:120px; height:120px; border-radius:15px;
+      overflow:hidden; background:rgba(255,255,255,0.2);
+      display:flex; align-items:center; justify-content:center; font-size:24px;
+    }
+    .evidence-item img, .evidence-item video { width:100%; height:100%; object-fit:cover; }
+    .delete-evidence {
+      position:absolute; top:5px; right:5px; background:rgba(244,67,54,0.9);
+      color:white; border:none; border-radius:50%; width:25px; height:25px;
+      cursor:pointer; font-size:12px; display:none;
+    }
+    .evidence-item:hover .delete-evidence { display:block; }
+    .timer { text-align:center; margin:20px 0; font-size:18px; font-weight:bold; color:#FFD700; }
+    .submit-btn {
+      width:100%; padding:18px; border:none; border-radius:25px;
+      background:linear-gradient(45deg,#FF6B6B,#FF8E8E); color:black;
+      font-size:18px; font-weight:bold; cursor:pointer; transition:all 0.3s;
+      text-transform:uppercase; letter-spacing:1px;
+    }
+    .submit-btn:hover:not(:disabled) { transform:translateY(-3px); box-shadow:0 15px 35px rgba(255,107,107,0.4); }
+    .submit-btn:disabled { opacity:0.6; cursor:not-allowed; }
+    .success-message {
+      background:rgba(76,175,80,0.3); border-radius:15px; padding:20px;
+      text-align:center; margin-top:20px; display:none;
+    }
+    .error-message {
+      background:rgba(244,67,54,0.3); border-radius:15px; padding:15px;
+      text-align:center; margin-top:10px; display:none; color:white;
+    }
+    .back-btn {
+      background:transparent; border:1px solid rgba(255,255,255,0.5);
+      color:white; padding:10px 20px; border-radius:25px; font-size:14px;
+      cursor:pointer; transition:0.3s; margin-bottom:20px;
+    }
+    .back-btn:hover { background:rgba(255,255,255,0.2); }
+    @media(max-width:600px) { .container { padding:30px 20px; } .evidence-item { width:100px; height:100px; } }
+  </style>
+</head>
+<body>
+  <div class="container" id="reportContainer">
+    <button class="back-btn" onclick="window.location.href='/dashboard'">← Back</button>
+    <h1>🕵️ Anonymous Reporting</h1>
+    <p class="subtitle">Your report is secure and anonymous</p>
+
+    <form id="reportForm" method="POST" action="/submit_report" enctype="multipart/form-data">
+      <div class="form-group">
+        <label>📝 Incident Description *</label>
+        <textarea name="description" placeholder="Describe the incident in detail..." required maxlength="2000"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>📍 Location *</label>
+        <input type="text" name="location" id="locationInput" placeholder="Current location or incident location..." required>
+        <input type="hidden" name="latitude" id="latInput">
+        <input type="hidden" name="longitude" id="lngInput">
+      </div>
+
+      <div class="form-group">
+        <label>📎 Evidence Upload</label>
+        <div class="file-upload-area" id="fileUploadArea">
+          <div class="file-icon">📱</div>
+          <p>Click or drag & drop <strong>photos/videos</strong></p>
+          <p style="font-size:12px;opacity:0.8;">Max 10 files, 50MB total</p>
+          <input type="file" id="fileInput" name="evidence" class="file-input" multiple accept="image/*,video/*">
+        </div>
+        <div class="evidence-list" id="evidenceList"></div>
+      </div>
+
+      <div class="timer" id="timer" style="display:none;">
+        ⏰ Evidence locked in: <span id="countdown">5:00</span>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">🚨 Submit Report</button>
+    </form>
+
+    <div class="success-message" id="successMessage">
+      ✅ Report submitted successfully!<br>
+      <small>Your evidence has been securely recorded</small><br>
+      <button onclick="window.location.href='/dashboard'" style="margin-top:15px; padding:10px 25px; border-radius:20px; border:none; cursor:pointer; background:white; color:black;">← Back to Dashboard</button>
+    </div>
+    <div class="error-message" id="errorMessage"></div>
+  </div>
+
+  <script>
+    let uploadedFiles = [];
+    const maxFiles = 10;
+    const maxSize = 50 * 1024 * 1024;
+    let locked = false;
+    let timerInterval = null;
+    let timeLeft = 300;
+
+    // Get location on load
+    window.addEventListener('load', () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((pos) => {
+          document.getElementById('latInput').value = pos.coords.latitude;
+          document.getElementById('lngInput').value = pos.coords.longitude;
+          document.getElementById('locationInput').placeholder =
+            `📍 ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)} (auto-detected)`;
+        }, () => {});
+      }
+    });
+
+    // File upload
+    const uploadArea = document.getElementById('fileUploadArea');
+    const fileInput = document.getElementById('fileInput');
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+    uploadArea.addEventListener('drop', (e) => { e.preventDefault(); uploadArea.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
+    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+    function handleFiles(newFiles) {
+      if (locked) return;
+      Array.from(newFiles).forEach(file => {
+        if (uploadedFiles.length >= maxFiles) { alert(`Max ${maxFiles} files`); return; }
+        if (getTotalSize() + file.size > maxSize) { alert('Total size exceeds 50MB'); return; }
+        if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+          uploadedFiles.push(file);
+        }
+      });
+      renderEvidence();
+      syncFileInput();
+      startLockTimer();
+    }
+
+    function getTotalSize() { return uploadedFiles.reduce((t, f) => t + f.size, 0); }
+
+    function renderEvidence() {
+      const list = document.getElementById('evidenceList');
+      list.innerHTML = '';
+      uploadedFiles.forEach((file, i) => {
+        const item = document.createElement('div');
+        item.className = 'evidence-item';
+        const del = document.createElement('button');
+        del.className = 'delete-evidence';
+        del.innerHTML = '×'; del.type = 'button';
+        del.onclick = () => { uploadedFiles.splice(i, 1); renderEvidence(); syncFileInput(); };
+
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (e) => { item.innerHTML = `<img src="${e.target.result}">`; item.appendChild(del); };
+          reader.readAsDataURL(file);
+        } else {
+          item.innerHTML = '🎥'; item.appendChild(del);
+        }
+        list.appendChild(item);
+      });
+      // Update upload area text
+      if (uploadedFiles.length > 0) {
+        uploadArea.innerHTML = `<div class="file-icon">📁</div><p>${uploadedFiles.length}/${maxFiles} files • ${(getTotalSize()/1024/1024).toFixed(1)}MB</p><input type="file" id="fileInput" name="evidence" class="file-input" multiple accept="image/*,video/*">`;
+        document.getElementById('fileInput').addEventListener('change', (e) => handleFiles(e.target.files));
+        uploadArea.querySelector('input').click; // re-bind
+      }
+    }
+
+    function syncFileInput() {
+      // Rebuild FileList for form submission via DataTransfer
+      const dt = new DataTransfer();
+      uploadedFiles.forEach(f => dt.items.add(f));
+      fileInput.files = dt.files;
+    }
+
+    function startLockTimer() {
+      if (timerInterval || uploadedFiles.length === 0) return;
+      const timerEl = document.getElementById('timer');
+      const countdown = document.getElementById('countdown');
+      timerEl.style.display = 'block';
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        const m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+        countdown.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          locked = true;
+          timerEl.innerHTML = '🔒 EVIDENCE LOCKED';
+          uploadArea.style.pointerEvents = 'none';
+          uploadArea.style.opacity = '0.5';
+        }
+      }, 1000);
+    }
+
+    // Form submit via fetch
+    document.getElementById('reportForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      const successMsg = document.getElementById('successMessage');
+      const errorMsg = document.getElementById('errorMessage');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Submitting...';
+      errorMsg.style.display = 'none';
+
+      try {
+        const formData = new FormData(e.target);
+        const response = await fetch('/submit_report', { method: 'POST', body: formData });
+        const result = await response.json();
+
+        if (response.ok) {
+          document.getElementById('reportForm').style.display = 'none';
+          successMsg.style.display = 'block';
+        } else {
+          throw new Error(result.error || 'Submission failed');
+        }
+      } catch (err) {
+        errorMsg.textContent = `❌ ${err.message}`;
+        errorMsg.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '🚨 Submit Report';
+      }
+    });
+  </script>
+</body>
+</html>

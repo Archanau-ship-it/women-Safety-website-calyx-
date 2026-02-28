@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - Calyx</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+    body {
+      min-height: 100vh; display: flex; justify-content: center; align-items: center;
+      background: linear-gradient(to right, #130530, #841f08); padding: 20px;
+    }
+    .container {
+      width: 90%; max-width: 450px; padding: 40px;
+      background: rgba(255,255,255,0.15); border-radius: 20px;
+      backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+      border: 1px solid rgba(255,255,255,0.3);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3); color: white;
+    }
+    h2 { text-align: center; margin-bottom: 30px; }
+    .flash-error { background: rgba(255,50,50,0.4); padding: 10px; border-radius: 10px; margin-bottom: 15px; font-size: 14px; }
+    .flash-success { background: rgba(50,200,50,0.4); padding: 10px; border-radius: 10px; margin-bottom: 15px; font-size: 14px; }
+    .input-box { position: relative; margin-bottom: 25px; }
+    .input-box input {
+      width: 100%; padding: 10px 0; border: none; outline: none;
+      background: transparent; border-bottom: 2px solid white; color: white; font-size: 16px;
+    }
+    .input-box label {
+      position: absolute; top: 10px; left: 0;
+      pointer-events: none; transition: 0.3s; color: rgba(255,255,255,0.8);
+    }
+    .input-box input:focus ~ label,
+    .input-box input:valid ~ label { top: -12px; font-size: 12px; color: white; }
+    .emergency-section { margin-bottom: 25px; }
+    .emergency-section > label { display: block; margin-bottom: 10px; font-size: 14px; }
+    .emergency-input-group { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+    .emergency-input-group input {
+      flex: 1; padding: 10px 0; border: none; outline: none;
+      background: transparent; border-bottom: 2px solid white; color: white; font-size: 16px;
+    }
+    .emergency-input-group input::placeholder { color: rgba(255,255,255,0.6); }
+    .add-btn, .remove-btn {
+      padding: 8px 12px; border: none; border-radius: 15px;
+      cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.3s; width: 80px;
+    }
+    .add-btn { background: rgba(76,175,80,0.8); color: white; }
+    .add-btn:hover { background: #4CAF50; }
+    .remove-btn { background: rgba(244,67,54,0.8); color: white; }
+    .remove-btn:hover { background: #f44336; }
+    .phone-counter { align-self: center; font-size: 12px; color: rgba(255,255,255,0.7); }
+    button[type="submit"] {
+      width: 100%; padding: 12px; border: none; border-radius: 25px;
+      background: white; color: black; font-size: 16px; cursor: pointer; transition: 0.3s; margin-bottom: 20px;
+    }
+    button[type="submit"]:hover { background: #000; color: white; }
+    .login-link { text-align: center; font-size: 14px; }
+    .login-link a { color: white; font-weight: bold; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Register</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="/register" id="registerForm">
+      <div class="input-box">
+        <input type="text" name="name" required>
+        <label>Full Name</label>
+      </div>
+
+      <div class="input-box">
+        <input type="email" name="email" required>
+        <label>Email</label>
+      </div>
+
+      <div class="emergency-section">
+        <label>Emergency Contacts <span style="color:#ffd700;">(Add up to 5 numbers)</span></label>
+
+        <div class="emergency-input-group">
+          <input type="tel" name="emergency_phone_1" placeholder="+91XXXXXXXXXX" required>
+          <span class="phone-counter" id="phoneCount">1/5</span>
+        </div>
+
+        <div id="additionalPhones"></div>
+
+        <button type="button" class="add-btn" id="addPhoneBtn" onclick="addPhone()">+ Add</button>
+      </div>
+
+      <div class="input-box">
+        <input type="password" name="password" required minlength="6">
+        <label>Password</label>
+      </div>
+
+      <button type="submit">Register</button>
+
+      <div class="login-link">
+        Already have an account? <a href="/">Login</a>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    let phoneCounter = 1;
+    const maxPhones = 5;
+
+    function addPhone() {
+      if (phoneCounter >= maxPhones) {
+        alert('Maximum 5 emergency contacts allowed');
+        return;
+      }
+      phoneCounter++;
+      const div = document.createElement('div');
+      div.className = 'emergency-input-group';
+      div.id = `phoneGroup${phoneCounter}`;
+      div.innerHTML = `
+        <input type="tel" name="emergency_phone_${phoneCounter}" placeholder="+91XXXXXXXXXX">
+        <button type="button" class="remove-btn" onclick="removePhone(${phoneCounter})">Remove</button>
+      `;
+      document.getElementById('additionalPhones').appendChild(div);
+      updateCount();
+    }
+
+    function removePhone(id) {
+      const group = document.getElementById(`phoneGroup${id}`);
+      if (group) group.remove();
+      updateCount();
+    }
+
+    function updateCount() {
+      const total = 1 + document.querySelectorAll('#additionalPhones .emergency-input-group').length;
+      document.getElementById('phoneCount').textContent = `${total}/${maxPhones}`;
+      document.getElementById('addPhoneBtn').style.display = total >= maxPhones ? 'none' : 'inline-block';
+    }
+  </script>
+</body>
+</html>
